@@ -24,8 +24,14 @@ import BiblioPixelAnimations.strip.Wave as WA
 
 import sys
 import os
-# the mock-0.3.1 dir contains testcase.py, testutils.py & mock.py
-sys.path.append(re.sub('Animations', '', os.getcwd()))
+pathhere = sys.path[-1]  # if run via run-pixelweb  last in path is directory of this code
+sys.path.append(re.sub('Animations', '', pathhere))
+
+# machine independent to find path where this is running
+sys.path.append(re.sub('Animations', '', os.path.realpath(__package__)))
+
+#print sys.path
+
 from wormanimclass import Worm, pathgen
 
 
