@@ -20,6 +20,11 @@ from operator import or_, ior, ixor
 import matplotlib.pyplot as plt
 import BiblioPixelAnimations.matrix.bloom as BA
 import BiblioPixelAnimations.strip.Wave as WA
+
+
+import sys
+# the mock-0.3.1 dir contains testcase.py, testutils.py & mock.py
+sys.path.append('D:\\Bill\\SpyderWork\\')
 from wormanimclass import Worm, pathgen
 
 
