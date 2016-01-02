@@ -23,8 +23,9 @@ import BiblioPixelAnimations.strip.Wave as WA
 
 
 import sys
+import os
 # the mock-0.3.1 dir contains testcase.py, testutils.py & mock.py
-sys.path.append('D:\\Bill\\SpyderWork\\')
+sys.path.append(re.sub('Animations', '', os.getcwd()))
 from wormanimclass import Worm, pathgen
 
 
