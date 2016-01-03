@@ -37,7 +37,7 @@ from wormanimclass import Worm, pathgen
 
 drivermaster = DriverVisualizer(160, pixelSize=62, stayTop=False, maxWindowWidth=1024)
 # drivermaster = DriverVisualizer(160, pixelSize=31, stayTop=False, , maxWindowWidth=512)
-ledmaster = LEDMatrix(drivermaster)
+ledmaster = LEDMatrix(drivermaster, threadedUpdate=False)
 
 # segment colors
 lnin = [255, 222, 200, 150, 125]
@@ -70,7 +70,7 @@ wormdatalist = [(wormblue, wormbluepixmap, 24),
 
 # dummy  LED strips must each have their own slavedriver as thread is attached
 # to the driver
-ledslaves = [LEDStrip(DriverSlave(len(sarg), pixmap=sarg, pixheights=-1), threadedUpdate=True) \
+ledslaves = [LEDStrip(DriverSlave(len(sarg), pixmap=sarg, pixheights=-1), threadedUpdate=False) \
              for aarg, sarg, fps in wormdatalist]
 
 # Make the animation list
@@ -78,13 +78,13 @@ ledslaves = [LEDStrip(DriverSlave(len(sarg), pixmap=sarg, pixheights=-1), thread
 animationlist = [(Worm(ledslaves[i], *wd[0]), wd[2]) for i, wd in enumerate(wormdatalist)]
 
 # add a matrix animation background
-ledslaveb = LEDMatrix(DriverSlave(160, None, 0), width=16, height=10,  threadedUpdate=True)
+ledslaveb = LEDMatrix(DriverSlave(160, None, 0), width=16, height=10,  threadedUpdate=False)
 bloom = BA.Bloom(ledslaveb)
 animationlist.append((bloom, 10))
 
 # add the wave strip animation on the outside boards
 wpixm = pathgen(0, 15, 0, 9)
-ledslavew = LEDStrip(DriverSlave(len(wpixm), wpixm, 1),  threadedUpdate=True)
+ledslavew = LEDStrip(DriverSlave(len(wpixm), wpixm, 1),  threadedUpdate=False)
 wave = WA.Wave(ledslavew, (255, 0, 255), 1)
 animationlist.append((wave, 30))
 
@@ -96,47 +96,14 @@ def genParams():
     
 if __name__ == '__main__':  
       
-    #masteranimation = MasterAnimation(ledmaster, [w._led for w, f in animationlist])
     masteranimation = MasterAnimation(ledmaster, animationlist, runtime=1)
 
     # Master launches all in animationlist at preRun
     # Master steps when it gets a go ahdead signal from one of the
     # concurrent annimations
-    masteranimation.run(fps=None)  # if give fps for master will skip faster frames 
-     
-    # Run all the slave animations and master threaded
-    # master starts up slave animations
-    # The slave animations update their buffers at the correct
-    #   time and rather than update, just signal the master they 
-    #   are ready to be combined and sent to the actual leds
-
-    #NEED some time for these to start or fails to work (sometimes) 
-    # maybe to prevent calling stopped() before they get going???       
-    time.sleep(.001)
-
-    #print threading.enumerate()
-    print "After start master THREADS: " + ",".join([re.sub('<class |,|bibliopixel.\w*.|>', '', str(s.__class__)) for s in threading.enumerate()])
-
-    # idle and threaded animations will run jointly
-    while not all([w.stopped() for w, f in animationlist]):
-        pass    
+    masteranimation.run(fps=None, threaded = False)  # if give fps for master will skip faster frames 
+    masteranimation.stopThread() 
  
-    #time.sleep(.1)
-    # stop the master  
-    masteranimation.stopThread(True) # need True
-   
-    print [a.stopped() for a, f in animationlist]
-    
-    print "After all stopped THREADS: " + ",".join([re.sub('<class |,|bibliopixel.\w*.|>', '', str(s.__class__)) for s in threading.enumerate()])
-  
-#    
-    print "Master Animation Step Count {}".format(masteranimation._step)
-#    ledmaster.waitForUpdate()
-    ledmaster.stopUpdateThreads()   
-    [w._led.stopUpdateThreads() for w, f in animationlist]
-#    
-    print "After more stops THREADS: " + ",".join([re.sub('<class |,|bibliopixel.\w*.|>', '', str(s.__class__)) for s in threading.enumerate()])
-
     # plot timing data collected from all the animations
     # horizontal axis is time in ms
     # vertical are the various animation and dot is when update sent to leds by master

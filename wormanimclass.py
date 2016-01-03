@@ -48,7 +48,10 @@ class Worm(BaseStripAnim):
             for x in range(len(self._colors)):
                 if True:
                     self._led.set(self._path[segpos], self._colors[x])
-                    self._led.driver[0].pixheights[self._path[segpos]] = self._height[x]
+                    try:
+                        self._led.driver[0].pixheights[self._path[segpos]] = self._height[x]
+                    except AttributeError:
+                        pass # if _led.driver can't deal with pixheights
                 segpos -= self._direction
                 segpos %= len(self._path)
         self._activecount += amt
