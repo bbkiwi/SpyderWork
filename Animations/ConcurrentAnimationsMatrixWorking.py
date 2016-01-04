@@ -23,15 +23,7 @@ import BiblioPixelAnimations.strip.Wave as WA
 
 
 import sys
-import os
-pathhere = sys.path[-1]  # if run via run-pixelweb  last in path is directory of this code
-sys.path.append(re.sub('Animations', '', pathhere))
-
-# machine independent to find path where this is running
-sys.path.append(re.sub('Animations', '', os.path.realpath(__package__)))
-
-#print sys.path
-
+sys.path.append('D:\Bill\SpyderWork') # to get wormanimclass
 from wormanimclass import Worm, pathgen
 
 
@@ -113,7 +105,7 @@ if __name__ == '__main__':
     ax = plt.axis()
     delx = .01 * (ax[1] - ax[0])
     plt.axis([ax[0]-delx, ax[1]+delx, ax[2]-1, ax[3]+1])    
-    
+    plt.title("Master Animation Step Count {}".format(masteranimation._step))
 
 MANIFEST = [
     {

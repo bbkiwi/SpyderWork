@@ -44,10 +44,10 @@ wavewhitepixmap = pathgen(4, 11, 4, 5)
 
 # List of triple (animation arguments, slavedriver argument, fps)
 wavedatalist = [(waveblue, wavebluepixmap, 5),
-                (wavered, waveredpixmap, 5),
-                (wavegreen, wavegreenpixmap, 5),
-                (wavecyan, wavecyanpixmap, 5),
-                (wavewhite, wavewhitepixmap, 5)]
+                (wavered, waveredpixmap, 6),
+                (wavegreen, wavegreenpixmap, 7),
+                (wavecyan, wavecyanpixmap, 8),
+                (wavewhite, wavewhitepixmap, 9)]
 
 # dummy  LED strips must each have their own slavedrivers
 ledslaves = [LEDStrip(DriverSlave(len(sarg), pixmap=sarg, pixheights=-1), threadedUpdate=False) \
@@ -55,14 +55,14 @@ ledslaves = [LEDStrip(DriverSlave(len(sarg), pixmap=sarg, pixheights=-1), thread
 
 # Make the animation list
 # Wave animations as list pairs (animation instances, fps) added
-animationlist = [(WA.Wave(ledslaves[i], *wd[0]), wd[2]) for i, wd in enumerate(wavedatalist)]
+animationlist = [(WA.WaveMove(ledslaves[i], *wd[0]), wd[2]) for i, wd in enumerate(wavedatalist)]
 
 # needed to run on pixelweb     
 def genParams():
     return {"start":0, "end":-1, "animcopies": animationlist}
 
 if __name__ == '__main__':  
-    masteranimation = MasterAnimation(ledmaster, animationlist, runtime=20)
+    masteranimation = MasterAnimation(ledmaster, animationlist, runtime=10)
 
     # Master launches all in animationlist at preRun
     # Master steps when it gets a go ahdead signal from one of the
@@ -72,7 +72,18 @@ if __name__ == '__main__':
     
     #import threading
     #print threading.enumerate()
- 
+    
+    # plot timing data collected from all the animations
+    # horizontal axis is time in ms
+    # vertical are the various animation and dot is when update sent to leds by master
+    import matplotlib.pyplot as plt
+    plt.clf()
+    col = 'brgcwk'
+    [plt.plot(masteranimation.timedata[i], [i] * len(masteranimation.timedata[i]), col[i%6]+'o') for i in range(len(animationlist))]
+    ax = plt.axis()
+    delx = .01 * (ax[1] - ax[0])
+    plt.axis([ax[0]-delx, ax[1]+delx, ax[2]-1, ax[3]+1]) 
+    plt.title("Master Animation Step Count {}".format(masteranimation._step)) 
 MANIFEST = [
     {
         "class": MasterAnimation, 

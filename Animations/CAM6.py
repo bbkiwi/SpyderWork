@@ -64,7 +64,7 @@ def genParams():
     return {"start":0, "end":-1, "animcopies": animationlist}
 
 if __name__ == '__main__':  
-    masteranimation = MasterAnimation(ledmaster, animationlist, runtime=20)
+    masteranimation = MasterAnimation(ledmaster, animationlist, runtime=2)
 
     # Master launches all in animationlist at preRun
     # Master steps when it gets a go ahdead signal from one of the
@@ -74,6 +74,19 @@ if __name__ == '__main__':
     
     #import threading
     #print threading.enumerate()
+    
+    # plot timing data collected from all the animations
+    # horizontal axis is time in ms
+    # vertical are the various animation and dot is when update sent to leds by master
+    import matplotlib.pyplot as plt
+    plt.clf()
+    col = 'brgcwk'
+    [plt.plot(masteranimation.timedata[i], [i] * len(masteranimation.timedata[i]), col[i%6]+'o') for i in range(len(animationlist))]
+    ax = plt.axis()
+    delx = .01 * (ax[1] - ax[0])
+    plt.axis([ax[0]-delx, ax[1]+delx, ax[2]-1, ax[3]+1]) 
+    plt.title("Master Animation Step Count {}".format(masteranimation._step))
+    
  
 MANIFEST = [
     {

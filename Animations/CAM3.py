@@ -87,7 +87,18 @@ if __name__ == '__main__':
     
     #import threading
     #print threading.enumerate()
- 
+    
+    # plot timing data collected from all the animations
+    # horizontal axis is time in ms
+    # vertical are the various animation and dot is when update sent to leds by master
+    import matplotlib.pyplot as plt
+    plt.clf()
+    col = 'brgcwk'
+    [plt.plot(masteranimation.timedata[i], [i] * len(masteranimation.timedata[i]), col[i%6]+'o') for i in range(len(animationlist))]
+    ax = plt.axis()
+    delx = .01 * (ax[1] - ax[0])
+    plt.axis([ax[0]-delx, ax[1]+delx, ax[2]-1, ax[3]+1]) 
+    plt.title("Master Animation Step Count {}".format(masteranimation._step)) 
 MANIFEST = [
     {
         "class": MasterAnimation, 
