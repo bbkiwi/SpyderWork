@@ -25,7 +25,7 @@ sys.path.append('D:\Bill\SpyderWork') # to get wormanimclass
 from wormanimclass import Worm, pathgen
 # set up led with it's driver for the MasterAnimation
 drivermaster = DriverVisualizer(160, pixelSize=62, stayTop=False, maxWindowWidth=1024)
-ledmaster = LEDMatrix(drivermaster, width=16, height=10, threadedUpdate=False)
+ledmaster = LEDMatrix(drivermaster, width=16, height=10, threadedUpdate=False, masterBrightness=255)
 
 # Set up animations that will run concurrently
 # Wave arguments

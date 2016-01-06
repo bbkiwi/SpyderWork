@@ -24,3 +24,4 @@ multiply_them(
         block=(400,1,1))
 
 print dest-a*b
+print dest

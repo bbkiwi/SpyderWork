@@ -112,7 +112,7 @@ MANIFEST = [
         "class": MasterAnimation, 
         "type": "preset",
         "preset_type": "animation",
-        "controller": "matrix", 
+        "controller": "strip", 
         "desc": None, 
         "display": "Strip Master Animation ", 
         "id": "SMasterAnimation", 

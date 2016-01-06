@@ -14,12 +14,14 @@ lin_comb = ElementwiseKernel(
         preamble="""
         __device__ float my_f(float x, float y)
         { 
-          return sin(x*y);
+          return x + y;
         }
         """)
 
 c_gpu = gpuarray.empty_like(a_gpu)
 lin_comb(5, a_gpu, 6, b_gpu, c_gpu)
 
+print c_gpu
+#print (5*a_gpu+6*b_gpu)
 #import numpy.linalg as la
 #assert la.norm((c_gpu - (5*a_gpu+6*b_gpu)).get()) < 1e-5
