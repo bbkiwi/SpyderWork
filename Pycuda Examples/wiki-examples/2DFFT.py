@@ -39,7 +39,7 @@ class GPUMulti(multiprocessing.Process):
         del self.ctx
         
         print "till the end %d" %self.number
-        
+
 
 p = 8192; # INPUT IMAGE SIZE (8192 * 8192)
 m = 4     # TO DIVIDE THE INPUT IMAGE INTO 4* (2048 * 8192) SIZED IMAGES (Depends on the total memory of your GPU)
@@ -65,7 +65,7 @@ b2_a = numpy.zeros([p,p],dtype = numpy.complex64)     #RESHAPED (8192*8192) OUTP
 #NOW WE ARE READY TO KICK START THE GPU
 
 # THE NO OF GPU'S PRESENT (CHANGE ACCORDING TO THE No.OF GPUS YOU HAVE)
-num = 2 # I KNOW THIS IS A BAD PRACTISE, BUT I COUNDN'T FIND ANY OTHER WAY(INIT CANNOT BE USED HERE)
+num = 1 # I KNOW THIS IS A BAD PRACTISE, BUT I COUNDN'T FIND ANY OTHER WAY(INIT CANNOT BE USED HERE)
 
 #THE TRANSPOSE-SPLIT ALGORITHM FOR FFT
 for t in range (0,trans):

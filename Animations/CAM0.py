@@ -21,7 +21,6 @@ import BiblioPixelAnimations.matrix.bloom as BA
 import BiblioPixelAnimations.strip.Wave as WA
 import sys
 
-sys.path.append('D:\Bill\SpyderWork') # to get wormanimclass
 from wormanimclass import Worm, pathgen
 # set up led with it's driver for the MasterAnimation
 drivermaster = DriverVisualizer(160, pixelSize=62, stayTop=False, maxWindowWidth=1024)
@@ -60,8 +59,9 @@ wormdatalist = [(wormblue, wormbluepixmap, 20),
                 (wormwhite, wormwhitepixmap, 16)]
 
 # dummy  LED strips must each have their own slavedrivers
-ledslaves = [LEDStrip(DriverSlave(len(sarg), pixmap=sarg, pixheights=-1), threadedUpdate=False) \
-             for aarg, sarg, fps in wormdatalist]
+ledslaves = [LEDStrip(DriverSlave(len(sarg), pixmap=sarg, pixheights=-1), 
+                      threadedUpdate=False, masterBrightness=255) 
+                      for aarg, sarg, fps in wormdatalist]
 
 # Make the animation list
 # Worm animations as list pairs (animation instances, fps) added
@@ -72,16 +72,24 @@ def genParams():
     return {"start":0, "end":-1, "animcopies": animationlist}
 
 if __name__ == '__main__':  
-    masteranimation = MasterAnimation(ledmaster, animationlist, runtime=20)
+    masteranimation = MasterAnimation(ledmaster, animationlist, runtime=2)
 
     # Master launches all in animationlist at preRun
     # Master steps when it gets a go ahdead signal from one of the
     # concurrent annimations
-    masteranimation.run(fps=None, threaded = False)  # if give fps for master will skip faster frames 
-    masteranimation.stopThread() 
+
+
+    # if give fps for master will skip faster frame
+    masteranimation.run(fps=None, threaded=True)
+    # if threaded is False will wait otherwise not
     
-    #import threading
-    #print threading.enumerate()
+    # this will stop as soon as executed, so if threded=True above will
+    #   be immediated stopped!
+    # masteranimation.stopThread() 
+
+    # wait here before plotting otherwise data wont be ready
+    while not masteranimation.stopped():
+        pass
     
     # plot timing data collected from all the animations
     # horizontal axis is time in ms

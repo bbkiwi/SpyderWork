@@ -1,10 +1,29 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Jan 06 16:08:31 2016
+Created on Tue Jan 12 14:17:32 2016
 
 @author: Bill
 """
 
-def t(a,b,c='c',d='d'):
-    print a,b,c,d
+import new
+
+
+class Z(object):
+    def q(self):
+        return self
+
+z = Z()
+
+print z.q()
+
+def method(self):
+    return self
     
+def method2(self):
+    print 'hello {}'.format(self)
+
+
+
+z.q = new.instancemethod(method2, z, None)
+
+z.q()

@@ -72,7 +72,7 @@ ledslaves = [LEDStrip(DriverSlave(len(sarg), pixmap=sarg, pixheights=-1), thread
 # Worm animations as list pairs (animation instances, fps) added
 animationlist = [(Worm(ledslaves[i], *wd[0]), wd[2]) for i, wd in enumerate(wormdatalist)]
 
-ledslaveb = LEDMatrix(DriverSlave(160, None, 0), width=16, height=10,  threadedUpdate=False, masterBrightness=50)
+ledslaveb = LEDMatrix(DriverSlave(160, None, 0), width=16, height=10,  threadedUpdate=False, masterBrightness=80)
 bloom = BA.Bloom(ledslaveb)
 animationlist.append((bloom, 10))
 
