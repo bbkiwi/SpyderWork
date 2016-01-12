@@ -6,7 +6,7 @@ Use version of DriverSlave that has pixmap and pixheights
 from bibliopixel import LEDStrip, LEDMatrix
 # from bibliopixel.drivers.LPD8806 import DriverLPD8806, ChannelOrder
 from bibliopixel.drivers.visualizer import DriverVisualizer, ChannelOrder
-from bibliopixel.drivers.slave_driver import DriverSlave
+from bibliopixel.drivers.dummy_driver import DriverDummy
 # import colors
 import bibliopixel.colors as colors
 from bibliopixel.animation import BaseStripAnim, BaseMatrixAnim, MasterAnimation
@@ -60,28 +60,31 @@ wormdatalist = [(wormblue, wormbluepixmap, 10),
                 (wormgreen, wormgreenpixmap, 10),
                 (wormcyan, wormcyanpixmap, 12),
                 (wormwhite, wormwhitepixmap, 16),
-		(wormwhite2, wormwhite2pixmap, 16)]
+		       (wormwhite2, wormwhite2pixmap, 16)]
 
 
+ledlist = [LEDStrip(DriverDummy(len(sarg)), threadedUpdate=False, 
+                    masterBrightness=255) for aarg, sarg, fps in wormdatalist]
 
-# dummy  LED strips must each have their own slavedrivers
-ledslaves = [LEDStrip(DriverSlave(len(sarg), pixmap=sarg, pixheights=-1), threadedUpdate=False) \
-             for aarg, sarg, fps in wormdatalist]
+#ledlist = [LEDStrip(DriverVisualizer(len(sarg), pixelSize=62, stayTop=True, maxWindowWidth=1024),
+#                      threadedUpdate=False, masterBrightness=255)
+#                      for aarg, sarg, fps in wormdatalist]
 
 # Make the animation list
-# Worm animations as list pairs (animation instances, fps) added
-animationlist = [(Worm(ledslaves[i], *wd[0]), wd[2]) for i, wd in enumerate(wormdatalist)]
+# Worm animations as list tuple (animation instances, pixmap, pixheights, fps) added
+animationlist = [(Worm(ledlist[i], *wd[0]), wd[1], None, wd[2]) for i, wd in enumerate(wormdatalist)]
 
-ledslaveb = LEDMatrix(DriverSlave(160, range(159,-1,-1), 0), width=16, height=10,  threadedUpdate=False, masterBrightness=55)
+ledslaveb = LEDMatrix(DriverDummy(160), width=16, height=10,  threadedUpdate=False, masterBrightness=100)
 rain = MR.MatrixRain(ledslaveb, [colors.Green, colors.Cyan])
+#animationlist.append((rain, range(159,-1,-1), 0, 5))
+animationlist.append((rain, None, 0, 6))
 
-animationlist.append((rain, 10))
 # needed to run on pixelweb     
 def genParams():
     return {"start":0, "end":-1, "animcopies": animationlist}
 
 if __name__ == '__main__':  
-    masteranimation = MasterAnimation(ledmaster, animationlist, runtime=20)
+    masteranimation = MasterAnimation(ledmaster, animationlist, runtime=5)
 
     # Master launches all in animationlist at preRun
     # Master steps when it gets a go ahdead signal from one of the
