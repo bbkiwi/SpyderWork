@@ -28,7 +28,7 @@ class Dummy(BaseStripAnim):
 
 if __name__ == '__main__':
     pixelWidth = 10
-    masterBrightness = 255
+    masterBrightness = 250
     driver = DriverVisualizer(160, pixelSize=8, stayTop=True)
     led = LEDStrip(driver, pixelWidth=pixelWidth,  masterBrightness=masterBrightness)
     dum = Dummy(led)
