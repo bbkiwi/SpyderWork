@@ -7,7 +7,7 @@ import threading
 from bibliopixel import LEDStrip, LEDMatrix
 # from bibliopixel.drivers.LPD8806 import DriverLPD8806, ChannelOrder
 from bibliopixel.drivers.visualizer import DriverVisualizer, ChannelOrder
-from bibliopixel.drivers.slave_driver import DriverSlave
+from bibliopixel.drivers.dummy_driver import DriverDummy
 # import colors
 import bibliopixel.colors 
 from bibliopixel.animation import BaseStripAnim, BaseMatrixAnim, MasterAnimation
@@ -60,25 +60,25 @@ wormdatalist = [(wormblue, wormbluepixmap, 24),
                 (wormcyan, wormcyanpixmap, 12),
                 (wormwhite, wormwhitepixmap, 8)]
 
-# dummy  LED strips must each have their own slavedriver as thread is attached
-# to the driver
-ledslaves = [LEDStrip(DriverSlave(len(sarg), pixmap=sarg, pixheights=-1), threadedUpdate=False) \
-             for aarg, sarg, fps in wormdatalist]
+ledlist = [LEDStrip(DriverDummy(len(sarg)), threadedUpdate=False, 
+                    masterBrightness=255) for aarg, sarg, fps in wormdatalist]
+
+#ledlist = [LEDStrip(DriverVisualizer(len(sarg), pixelSize=62, stayTop=True, maxWindowWidth=1024),
+#                      threadedUpdate=False, masterBrightness=255)
+#                      for aarg, sarg, fps in wormdatalist]
 
 # Make the animation list
-# Worm animations as list pairs (animation instances, fps) added
-animationlist = [(Worm(ledslaves[i], *wd[0]), wd[2]) for i, wd in enumerate(wormdatalist)]
-
+# Worm animations as list tuple (animation instances, pixmap, pixheights, fps) added
+animationlist = [(Worm(ledlist[i], *wd[0]), wd[1], None, wd[2]) for i, wd in enumerate(wormdatalist)]
+ledslaveb = LEDMatrix(DriverDummy(160), width=16, height=10,  threadedUpdate=False, masterBrightness=100)
 # add a matrix animation background
-ledslaveb = LEDMatrix(DriverSlave(160, None, 0), width=16, height=10,  threadedUpdate=False)
 bloom = BA.Bloom(ledslaveb)
-animationlist.append((bloom, 10))
-
+animationlist.append((bloom, None, 0, 10))
 # add the wave strip animation on the outside boards
 wpixm = pathgen(0, 15, 0, 9)
-ledslavew = LEDStrip(DriverSlave(len(wpixm), wpixm, 1),  threadedUpdate=False)
+ledslavew = LEDStrip(DriverDummy(len(wpixm)), threadedUpdate=False, masterBrightness=255)
 wave = WA.Wave(ledslavew, (255, 0, 255), 1)
-animationlist.append((wave, 30))
+animationlist.append((wave, wpixm, 0, 30))
 
  
 # needed to run on pixelweb     

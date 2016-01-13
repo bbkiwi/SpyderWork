@@ -60,7 +60,7 @@ ledlist = [LEDStrip(DriverDummy(len(sarg)), threadedUpdate=False,
 
 # Make the animation list
 # Worm animations as list tuple (animation instances, pixmap, pixheights, fps) added
-animationlist = [(WA.Wave(ledlist[i], *wd[0]), wd[1], None, wd[2]) for i, wd in enumerate(wavedatalist)]
+animationlist = [(WA.WaveMove(ledlist[i], *wd[0]), wd[1], None, wd[2]) for i, wd in enumerate(wavedatalist)]
 
 # needed to run on pixelweb     
 def genParams():

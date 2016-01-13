@@ -6,7 +6,7 @@ Use version of DriverSlave that has pixmap and pixheights
 from bibliopixel import LEDStrip, LEDMatrix
 # from bibliopixel.drivers.LPD8806 import DriverLPD8806, ChannelOrder
 from bibliopixel.drivers.visualizer import DriverVisualizer, ChannelOrder
-from bibliopixel.drivers.slave_driver import DriverSlave
+from bibliopixel.drivers.dummy_driver import DriverDummy
 # import colors
 import bibliopixel.colors 
 from bibliopixel.animation import BaseStripAnim, BaseMatrixAnim, MasterAnimation
@@ -64,13 +64,17 @@ wormdatalist = [(wormblue, wormbluepixmap, 10),
 moredata = [tuple([w, map(lambda x:(x+8)%160, p), f]) for w, p, f in wormdatalist]
 wormdatalist.extend(moredata)
 
-# dummy  LED strips must each have their own slavedrivers
-ledslaves = [LEDStrip(DriverSlave(len(sarg), pixmap=sarg, pixheights=-1), threadedUpdate=False) \
-             for aarg, sarg, fps in wormdatalist]
+ledlist = [LEDStrip(DriverDummy(len(sarg)), threadedUpdate=False, 
+                    masterBrightness=255) for aarg, sarg, fps in wormdatalist]
+
+#ledlist = [LEDStrip(DriverVisualizer(len(sarg), pixelSize=62, stayTop=True, maxWindowWidth=1024),
+#                      threadedUpdate=False, masterBrightness=255)
+#                      for aarg, sarg, fps in wormdatalist]
 
 # Make the animation list
-# Worm animations as list pairs (animation instances, fps) added
-animationlist = [(Worm(ledslaves[i], *wd[0]), wd[2]) for i, wd in enumerate(wormdatalist)]
+# Worm animations as list tuple (animation instances, pixmap, pixheights, fps) added
+animationlist = [(Worm(ledlist[i], *wd[0]), wd[1], None, wd[2]) for i, wd in enumerate(wormdatalist)]
+
 
 # needed to run on pixelweb     
 def genParams():
