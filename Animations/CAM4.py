@@ -77,7 +77,7 @@ animationlist = [(Worm(ledlist[i], *wd[0]), wd[1], None, wd[2]) for i, wd in enu
 ledslaveb = LEDMatrix(DriverDummy(160), width=16, height=10,  threadedUpdate=False, masterBrightness=100)
 rain = MR.MatrixRain(ledslaveb, [colors.Green, colors.Cyan])
 #animationlist.append((rain, range(159,-1,-1), 0, 5))
-animationlist.append((rain, None, 0, 6))
+animationlist.append((rain, None, 0, 30))
 
 # needed to run on pixelweb     
 def genParams():
