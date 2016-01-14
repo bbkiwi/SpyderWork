@@ -73,7 +73,7 @@ animationlist = [(Worm(ledlist[i], *wd[0]), wd[1], -1, wd[2]) for i, wd in enume
 
 # needed to run on pixelweb
 def genParams():
-    return {"start":0, "end":-1, "animcopies": animationlist}
+    return {"start":0, "end":-1, "animTracks": animationlist}
 
 if __name__ == '__main__':
     masteranimation = MasterAnimation(ledmaster, animationlist, runtime=2)

@@ -83,7 +83,7 @@ animationlist.append((wave, wpixm, 0, 30))
  
 # needed to run on pixelweb     
 def genParams():
-    return {"start":0, "end":-1, "animcopies": animationlist}
+    return {"start":0, "end":-1, "animTracks": animationlist}
 
     
 if __name__ == '__main__':  
