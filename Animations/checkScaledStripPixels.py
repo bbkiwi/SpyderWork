@@ -27,8 +27,8 @@ class Dummy(BaseStripAnim):
         pass
 
 if __name__ == '__main__':
-    pixelWidth = 10
-    masterBrightness = 250
+    pixelWidth = 5
+    masterBrightness = 155
     driver = DriverVisualizer(160, pixelSize=8, stayTop=True)
     led = LEDStrip(driver, pixelWidth=pixelWidth,  masterBrightness=masterBrightness)
     dum = Dummy(led)
@@ -37,14 +37,20 @@ if __name__ == '__main__':
     dum._led.all_off()
     print "Pixel width {}".format(dum._led.pixelWidth) 
     print "Numer of scaled pixels {}".format(dum._led.numLEDs)
-    print "set scaled pixel 0 to red and scaled pixel 1 to green"    
+    print "set scaled pixel 14 to red and scaled pixel 15 to green"    
     print "these colors are scaled via masterBrightness"    
-    dum._led.set(0,(255, 0 ,0))
+    dum._led.set(14,(255, 0 ,0))
     dum._led.update()
     px1c = (0, 255 ,0)
-    dum._led.set(1, px1c)
+    dum._led.set(15, px1c)
     dum._led.update()
-    print "But when ask for pixel 0s color get {}".format(dum._led.get(0))
-    print "Is it the value we set? {}".format(dum._led.get(0) == (255, 0, 0))
-    print "But when ask for pixel 1s color get {}".format(dum._led.get(1))
-    print "Is it the value we set? {}".format(dum._led.get(1) == px1c)
+    print "But when ask for pixel 14s color get {}".format(dum._led.get(14))
+    print "Is it the value we set? {}".format(dum._led.get(14) == (255, 0, 0))
+    print "But when ask for pixel 15s color get {}".format(dum._led.get(15))
+    print "Is it the value we set? {}".format(dum._led.get(15) == px1c)
+    print "use fill to make pixels 3,4,5,6 white"
+    dum._led.fill((255,255,255),3,6)
+    dum._led.update()
+    print "Where they set? {}".format(all([dum._led.get(p) == (255,255,255) for p in range(3,7)]))
+ 
+    
