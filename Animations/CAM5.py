@@ -98,7 +98,7 @@ MANIFEST = [
         "controller": "matrix", 
         "desc": None, 
         "display": "Waves in Rings", 
-        "id": "MMasterAnimation4", 
+        "id": "MMasterAnimation5", 
         "params": [
             {
                 "default": 10, 

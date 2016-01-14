@@ -12,7 +12,7 @@ import bibliopixel.colors
 from bibliopixel.animation import BaseStripAnim, BaseMatrixAnim, MasterAnimation
 from logging import DEBUG, INFO, WARNING, CRITICAL, ERROR
 from bibliopixel import log
-log.setLogLevel(INFO)
+log.setLogLevel(WARNING)
 import re
 import time
 from operator import or_, ior, ixor
