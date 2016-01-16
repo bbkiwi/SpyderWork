@@ -23,8 +23,8 @@ import BiblioPixelAnimations.strip.Wave as WA
 
 
 import sys
-sys.path.append('D:\Bill\SpyderWork') # to get wormanimclass
-from wormanimclass import Worm, pathgen
+
+from bibliopixel.tests.wormanimclass import Worm, pathgen
 
 
 drivermaster = DriverVisualizer(160, pixelSize=62, stayTop=False, maxWindowWidth=1024)

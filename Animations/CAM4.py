@@ -21,8 +21,8 @@ import BiblioPixelAnimations.matrix.MatrixRain as MR
 import BiblioPixelAnimations.strip.Wave as WA
 import sys
 
-sys.path.append('D:\Bill\SpyderWork') # to get wormanimclass
-from wormanimclass import Worm, pathgen
+
+from bibliopixel.tests.wormanimclass import Worm, pathgen
 # set up led with it's driver for the MasterAnimation
 drivermaster = DriverVisualizer(160, pixelSize=62, stayTop=False, maxWindowWidth=1024)
 ledmaster = LEDMatrix(drivermaster, width=16, height=10, threadedUpdate=False)

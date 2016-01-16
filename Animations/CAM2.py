@@ -21,8 +21,8 @@ import BiblioPixelAnimations.matrix.bloom as BA
 import BiblioPixelAnimations.strip.Wave as WA
 import sys
 
-sys.path.append('D:\Bill\SpyderWork') # to get wormanimclass
-from wormanimclass import Worm, pathgen
+
+from bibliopixel.tests.wormanimclass import Worm, pathgen
 # set up led with it's driver for the MasterAnimation
 drivermaster = DriverVisualizer(160, pixelSize=62, stayTop=False, maxWindowWidth=1024)
 ledmaster = LEDMatrix(drivermaster, width=16, height=10, threadedUpdate=False)
@@ -59,8 +59,7 @@ wormdatalist = [(wormblue, wormbluepixmap, 24),
                 (wormcyan, wormcyanpixmap, 12),
                 (wormwhite, wormwhitepixmap, 8)]
 
-# dummy strips must each have their own slavedriver as thread is attached
-# to the driver
+# dummy strips must be unique as pixmaps etc. attached to it
 # Here using worm path for pixmap
 
 ledlist = [LEDStrip(DriverDummy(len(sarg)), threadedUpdate=False, 
