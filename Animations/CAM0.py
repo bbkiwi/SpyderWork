@@ -52,11 +52,19 @@ wormcyanpixmap = pathgen(6, 9, 3, 6)
 wormwhitepixmap = pathgen(7, 8, 4, 5)
 
 # List of triple (animation arguments, pixmaps, fps)
-wormdatalist = [(wormblue, wormbluepixmap, 100),
-                (wormred, wormredpixmap, 5),
-                (wormgreen, wormgreenpixmap, 19),
-                (wormcyan, wormcyanpixmap, 21),
-                (wormwhite, wormwhitepixmap, 16)]
+#wormdatalist = [(wormblue, wormbluepixmap, 10),
+#                (wormred, wormredpixmap, 5),
+#                (wormgreen, wormgreenpixmap, 19),
+#                (wormcyan, wormcyanpixmap, 21),
+#                (wormwhite, wormwhitepixmap, 16)]
+#                
+wormdatalist = [(wormblue, wormbluepixmap, 10),
+                (wormred, wormredpixmap, 10),
+                (wormgreen, wormgreenpixmap, 10),
+                (wormcyan, wormcyanpixmap, 10),
+                (wormwhite, wormwhitepixmap, 10)]
+
+#wormdatalist = [(wormblue, wormbluepixmap, 10)]
 
 # Each animation must have their own leds
 # ledlist is list of unique leds
@@ -76,14 +84,17 @@ def genParams():
     return {"start":0, "end":-1, "animTracks": animationlist}
 
 if __name__ == '__main__':
-    masteranimation = MasterAnimation(ledmaster, animationlist, runtime=2)
+    masteranimation = MasterAnimation(ledmaster, animationlist, runtime=1)
 
     # Master launches all in animationlist at preRun
     # Master steps when it gets a go ahdead signal from one of the
     # concurrent annimations
 
 
-    # if give fps for master will skip faster frame
+    # if give fps for master will skip faster frames
+    # if all animations in animation list run at same fps using this
+    #    as fps will minimize update to ledmaster
+    # if fps is faster than those in animation list will get false WARNING
     masteranimation.run(fps=None, threaded=False)
     # if threaded is False will wait otherwise not
 

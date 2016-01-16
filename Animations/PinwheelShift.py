@@ -82,14 +82,17 @@ MANIFEST = [
 
 if __name__ == "__main__":
     from bibliopixel import *
-    from bibliopixel.drivers.LPD8806 import DriverLPD8806, ChannelOrder
+    #from bibliopixel.drivers.LPD8806 import DriverLPD8806, ChannelOrder
+    from bibliopixel.drivers.visualizer import DriverVisualizer, ChannelOrder
 
     #load driver and controller and animation queue
-    driver = DriverLPD8806(160,c_order = ChannelOrder.GRB, SPISpeed = 16)
+    driver = DriverVisualizer(160, pixelSize=62, stayTop=True, maxWindowWidth=1024)
+
+    #driver = DriverLPD8806(160,c_order = ChannelOrder.GRB, SPISpeed = 16)
     led = LEDMatrix(driver,16,10,serpentine=False)
 
     pw = PinwheelShift(led)
     print len(pw._led.buffer)
 
     #run animation
-    pw.run(amt=4, fps=25)
+    pw.run(amt=1, fps=100)
