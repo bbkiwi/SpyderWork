@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 """
 Tests: 
 Minor bugs related to scaled pixels in Strip and Matrix
