@@ -77,14 +77,14 @@ animationlist = [(Worm(ledlist[i], *wd[0]), wd[1], None, wd[2]) for i, wd in enu
 
 ledslaveb = LEDMatrix(DriverDummy(160), width=16, height=10,  threadedUpdate=False)
 bloom = BA.Bloom(ledslaveb)
-animationlist.append((bloom, None, 2, 10))
+animationlist.append((bloom, None, 2, 5))
 
 # needed to run on pixelweb     
 def genParams():
     return {"start":0, "end":-1, "animTracks": animationlist}
 
 if __name__ == '__main__':  
-    masteranimation = MasterAnimation(ledmaster, animationlist, runtime=10)
+    masteranimation = MasterAnimation(ledmaster, animationlist, runtime=1)
 
     # Master launches all in animationlist at preRun
     # Master steps when it gets a go ahdead signal from one of the

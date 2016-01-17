@@ -58,11 +58,11 @@ wormwhitepixmap = pathgen(7, 8, 4, 5)
 #                (wormcyan, wormcyanpixmap, 21),
 #                (wormwhite, wormwhitepixmap, 16)]
 #                
-wormdatalist = [(wormblue, wormbluepixmap, 10),
-                (wormred, wormredpixmap, 10),
-                (wormgreen, wormgreenpixmap, 10),
-                (wormcyan, wormcyanpixmap, 10),
-                (wormwhite, wormwhitepixmap, 10)]
+wormdatalist = [(wormblue, wormbluepixmap, 120),
+                (wormred, wormredpixmap, 30),
+                (wormgreen, wormgreenpixmap, 40),
+                (wormcyan, wormcyanpixmap, 60),
+                (wormwhite, wormwhitepixmap, 20)]
 
 #wormdatalist = [(wormblue, wormbluepixmap, 10)]
 
@@ -84,7 +84,7 @@ def genParams():
     return {"start":0, "end":-1, "animTracks": animationlist}
 
 if __name__ == '__main__':
-    masteranimation = MasterAnimation(ledmaster, animationlist, runtime=1)
+    masteranimation = MasterAnimation(ledmaster, animationlist, runtime=2)
 
     # Master launches all in animationlist at preRun
     # Master steps when it gets a go ahdead signal from one of the

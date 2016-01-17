@@ -17,7 +17,7 @@ import re
 import time
 import BiblioPixelAnimations.matrix.bloom as BA
 import BiblioPixelAnimations.strip.Wave as WA
-from wormanimclass import Worm, pathgen
+from bibliopixel.tests.wormanimclass import Worm, pathgen
 
 class dimLights(BaseStripAnim):
     def __init__(self, led, start=0, end=-1):
