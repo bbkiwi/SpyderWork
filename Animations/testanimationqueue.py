@@ -61,7 +61,7 @@ if __name__ == '__main__':
  
  
     animQ = AnimationQueue(led)
-    animQ.addAnim(dim, amt=10, fps=5, max_steps=40, threaded=True)
+    animQ.addAnim(dim, amt=10, fps=5, max_steps=40)
     animQ.addAnim(w1, fps=5, max_steps=20)
     animQ.addAnim(w2, fps=5, max_steps=20)
                      
