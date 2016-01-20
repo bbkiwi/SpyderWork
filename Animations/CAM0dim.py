@@ -120,10 +120,10 @@ dim0 = dimLights(ledlist[0])
 shift2 = shiftPixmap(ledlist[2], ledmaster)
 dim1 = dimLights(ledlist[1])
 
-## Not work but if below run these as threads does
-#animationlist.append((dim0, None, None, 10))
-#animationlist.append((dim1, None, None, 20))
-#animationlist.append((shift2, None, None, 1))
+# Not work but if below run these as threads does
+animationlist.append((dim0, None, None, 10))
+animationlist.append((dim1, None, None, 20))
+animationlist.append((shift2, None, None, 1))
 
 
 #animationlist.insert(0,(dim, animationlist[0][1], 7, 120))
@@ -146,10 +146,10 @@ if __name__ == '__main__':
     # if all animations in animation list run at same fps using this
     #    as fps will minimize update to ledmaster
     # if fps is faster than those in animation list will get false WARNING
-    dim0.run(fps=10, amt=10, threaded=True, updateWithPush=False)
-    dim1.run(fps=20, amt=20, threaded=True, updateWithPush=False)
-    #shift2.run(fps=fps, max_steps = fps * runtime, threaded=True, updateWithPush=False)
-    shift2.run(fps=1, threaded=True, updateWithPush=False)
+#    dim0.run(fps=10, amt=10, threaded=True, updateWithPush=False)
+#    dim1.run(fps=20, amt=20, threaded=True, updateWithPush=False)
+#    #shift2.run(fps=fps, max_steps = fps * runtime, threaded=True, updateWithPush=False)
+#    shift2.run(fps=1, threaded=True, updateWithPush=False)
     masteranimation.run(fps=None, threaded=False)
     print 'master done'
     dim0.stopThread()
