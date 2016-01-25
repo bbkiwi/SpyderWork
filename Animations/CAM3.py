@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Use version of DriverSlave that has pixmap and pixheights
+Demo using concurrent animation via MasterAnimation
 """
 # import base classes and driver
 from bibliopixel import LEDStrip, LEDMatrix

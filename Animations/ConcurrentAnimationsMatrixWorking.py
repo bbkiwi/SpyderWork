@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Use version of DriverSlave that has pixmap and pixheights
+Demo using concurrent animation via MasterAnimation
 """
 import threading
 # import base classes and driver

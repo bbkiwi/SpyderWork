@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Use version of DriverSlave that has pixmap and pixheights
+Demo using concurrent animation via MasterAnimation
 """
 # import base classes and driver
 from bibliopixel import LEDStrip, LEDMatrix
@@ -59,9 +59,12 @@ class shiftPixmap(BaseStripAnim):
         # any routine that moves pixmap
         self._led.pixmap  = [(p + amt) % self.ledmaster.numLEDs for p in self._led.pixmap]
 
-# set up led with it's driver for the MasterAnimation
-drivermaster = DriverVisualizer(160, pixelSize=62, stayTop=True, maxWindowWidth=1024)
-ledmaster = LEDMatrix(drivermaster, width=16, height=10, threadedUpdate=False)
+## set up led with it's driver for the MasterAnimation
+#drivermaster = DriverVisualizer(160, pixelSize=62, stayTop=True, maxWindowWidth=1024)
+#ledmaster = LEDMatrix(drivermaster, width=16, height=10, threadedUpdate=False)
+## set up led with it's driver for the MasterAnimation
+drivermaster = DriverVisualizer(320, pixelSize=31, stayTop=True, maxWindowWidth=512)
+ledmaster = LEDMatrix(drivermaster, width=16, height=20, threadedUpdate=False)
 
 # Set up animations that will run concurrently
 # Some worms
@@ -95,9 +98,9 @@ wormwhitepixmap = pathgen(7, 8, 4, 5)
 #                (wormcyan, wormcyanpixmap, 21),
 #                (wormwhite, wormwhitepixmap, 16)]
 #                
-wormdatalist = [(wormblue, wormbluepixmap, 40),
+wormdatalist = [(wormblue, wormbluepixmap, 10),
                 (wormred, wormredpixmap, 3),
-                (wormgreen, wormgreenpixmap, 13),
+                (wormgreen, wormgreenpixmap, 50),
                 (wormcyan, wormcyanpixmap, 6),
                 (wormwhite, wormwhitepixmap, 2)]
 
@@ -116,15 +119,18 @@ ledlist = [LEDStrip(DriverDummy(len(sarg)), threadedUpdate=False,
 # Worm animations as list tuple (animation instances, pixmap, pixheights, fps) added
 animationlist = [(Worm(ledlist[i], *wd[0]), wd[1], -1, wd[2]) for i, wd in enumerate(wormdatalist)]
 
-dim0 = dimLights(ledlist[0])
-shift2 = shiftPixmap(ledlist[2], ledmaster)
-dim1 = dimLights(ledlist[1])
+dim0 = dimLights(ledlist[0]) # uses same led as first animation, so will dim it
+dim1 = dimLights(ledlist[1]) # uses same led as second animation, so will dim it
+shift2 = shiftPixmap(ledlist[2], ledmaster) # uses same led as 2, so will move it
+dim2 = dimLights(ledlist[2])  
 
-# Not work but if below run these as threads does
-animationlist.append((dim0, None, None, 10))
+# add to animationlist - None for pixmap and pixheight will keep the lists
+#   orginally assigned to the animations with these leds
+animationlist.append((dim0, None, None, 100))
 animationlist.append((dim1, None, None, 20))
-animationlist.append((shift2, None, None, 1))
-
+animationlist.append((shift2, None, None, 5))
+animationlist.append((dim2, None, None, 205))
+#animationlist.append((animationlist[3][0], None, None, 6))
 
 #animationlist.insert(0,(dim, animationlist[0][1], 7, 120))
 
@@ -152,9 +158,9 @@ if __name__ == '__main__':
 #    shift2.run(fps=1, threaded=True, updateWithPush=False)
     masteranimation.run(fps=None, threaded=False)
     print 'master done'
-    dim0.stopThread()
-    dim1.stopThread()
-    shift2.stopThread()
+#    dim0.stopThread()
+#    dim1.stopThread()
+#    shift2.stopThread()
     # if threaded is False will wait otherwise not
 
     # this will stop as soon as executed, so if threded=True above will
