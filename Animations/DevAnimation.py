@@ -8,6 +8,8 @@ via a Timer
 
 from bibliopixel.led import LEDMatrix
 from bibliopixel.led import LEDStrip
+from bibliopixel.drivers.visualizer import DriverVisualizer, ChannelOrder
+from bibliopixel.drivers.dummy_driver import DriverDummy
 
 import time
 from random import randint, random
@@ -367,7 +369,7 @@ class MasterAnimation(BaseMatrixAnim):
         # for all animations' leds add attributes: _updatenow, pixmap, pixheights
         ledcheck = set()
         self.ledsunique = True
-        for a, pixmap, pixheights, f in self._animTracks:
+        for a, pixmap, pixheights, f, start, stop in self._animTracks:
             # make list of the distinct ._led used by the animation
             #  and attach threading.Event() atribute to them
             if id(a._led) in ledcheck:
@@ -435,8 +437,19 @@ class MasterAnimation(BaseMatrixAnim):
     def preRun(self, amt=1):
         super(MasterAnimation, self).preRun(amt)
         self.starttime = time.time()
-        for w, pm, ph, f in self._animTracks:
-            w.run(fps=f, max_steps=self._runtime * f, threaded = True, updateWithPush=False)
+        # starts all the animations at the same time
+#        for a, pm, ph, fps in self._animTracks:
+#            a.run(fps=fps, max_steps=self._runtime * f, threaded = True, updateWithPush=False)
+        # use threading.Timer to schedual start and stop
+        for a, pm, ph, fps, start, stop  in self._animTracks:
+            # must have threaded True
+            t1 = Timer(start, a.run, kwargs={'fps':fps, 'threaded':True, 'updateWithPush':False, 'untilComplete':False})
+            t2 = Timer(stop, a.stopThread, ())
+            #waitTillFrame(fps)
+            t1.start()
+            t2.start()
+
+
         #print "In preRUN THREADS: " + ",".join([re.sub('<class |,|bibliopixel.\w*.|>', '', str(s.__class__)) for s in threading.enumerate()])
 
     def preStep(self, amt=1):
@@ -445,7 +458,7 @@ class MasterAnimation(BaseMatrixAnim):
         while all(self._idlelist):
             self._idlelist = [not ledcopy._updatenow.isSet() for ledcopy in self._ledcopies]
             #print self._idlelist
-            if self._stopEvent.isSet() | all([a.stopped() for a, pm, ph, f in self._animTracks]):
+            if self._stopEvent.isSet() | all([a.stopped() for a, pm, ph, f, start, stop in self._animTracks]):
                 self.animComplete = True
                 #print all([a.stopped() for a, pm, pn, f in self._animTracks])
                 #print 'breaking out'
@@ -613,12 +626,24 @@ if __name__ == '__main__':
     wormcyanpixmap = pathgen(6, 9, 3, 6)
     wormwhitepixmap = pathgen(7, 8, 4, 5)
     
-    # List of triple (animation arguments, pixmaps, fps)
-    wormdatalist = [(wormblue, wormbluepixmap, 10),
-                    (wormred, wormredpixmap, 5),
-                    (wormgreen, wormgreenpixmap, 19),
-                    (wormcyan, wormcyanpixmap, 21),
-                    (wormwhite, wormwhitepixmap, 16)]
+    # List of triple (animation arguments, pixmaps, fps, start, stop)
+    wormdatalist = [(wormblue, wormbluepixmap, 10, 0, 10),
+                    (wormred, wormredpixmap, 5, 1, 10),
+                    (wormgreen, wormgreenpixmap, 19, 2, 8),
+                    (wormcyan, wormcyanpixmap, 21, 8, 12),
+                    (wormwhite, wormwhitepixmap, 16, 12, 14)]
+
+    wormdatalist = [(wormblue, wormbluepixmap, 1, 0, 10),
+                    (wormred, wormredpixmap, 5, 1, 10),
+                    (wormgreen, wormgreenpixmap, 4, 2, 8),
+                    (wormcyan, wormcyanpixmap, 10, 8, 12),
+                    (wormwhite, wormwhitepixmap, 6, 12, 14)]
+
+    wormdatalist = [(wormblue, wormbluepixmap, 4, 0, 10),
+                    (wormred, wormredpixmap, 4, 1, 10),
+                    (wormgreen, wormgreenpixmap, 4, 2, 8),
+                    (wormcyan, wormcyanpixmap, 4, 3, 12),
+                    (wormwhite, wormwhitepixmap, 4, 4, 14)]
                     
     #wormdatalist = [(wormblue, wormbluepixmap, 120),
     #                (wormred, wormredpixmap, 30),
@@ -631,65 +656,40 @@ if __name__ == '__main__':
     # Each animation must have their own leds
     # ledlist is list of unique leds
     ledlist = [LEDStrip(DriverDummy(len(sarg)), threadedUpdate=False, 
-                        masterBrightness=255) for aarg, sarg, fps in wormdatalist]
+                        masterBrightness=255) for aarg, sarg, fps, start, stop in wormdatalist]
     
     #ledlist = [LEDStrip(DriverVisualizer(len(sarg), pixelSize=62, stayTop=True, maxWindowWidth=1024),
     #                      threadedUpdate=False, masterBrightness=255)
     #                      for aarg, sarg, fps in wormdatalist]
     
     # Make the animation list
-    # Worm animations as list tuple (animation instances, pixmap, pixheights, fps) added
-    animationlist = [(Worm(ledlist[i], *wd[0]), wd[1], -1, wd[2]) for i, wd in enumerate(wormdatalist)]
-
-    
-    def schedanim(name, fps, color, st=None, _internalDelay=None):
-        """
-        schedule animation name at fps with plot color st random is not given
-        """
-        if st is None:
-            st = randint(1,8)
-        delst = randint(1,6)
-        a = BaseAnimation(color)
-        a._internalDelay = _internalDelay
-        #console.set_color(*color)  
-        print 'Animation: {} fps={} {} {}'.format(name, fps, st, st + delst)
-        #console.set_color()  
-        # NOTE Timer objects are threads, so can run Animation as threaded or not
-        #t1 = Timer(st, a.run, args=(), kwargs={'name':name, 'fps':fps, 'threaded':True})
-        t1 = Timer(st, a.run, kwargs={'fps':fps, 'threaded':True, 'untilComplete':False})
-        t2 = Timer(st + delst, a.stopThread, ())
-        #waitTillFrame(fps)
-        t1.start()
-        t2.start()
-        return a
+    # Worm animations as list tuple (animation instances, pixmap, pixheights, fps, start, stop) added
+    animationlist = [(Worm(ledlist[i], *wd[0]), wd[1], -1, wd[2], wd[3], wd[4]) for i, wd in enumerate(wormdatalist)]
+    # add animation 2 (wormgreen) at end with another time
+    animationlist.append((animationlist[2][0],animationlist[2][1],animationlist[2][2], animationlist[2][3], 10, 15 ))
 
     # wait till integral number of seconds
     now = waitTillFrame() # global
     now = time.time() # global
     print now
     
-    anlist = []
-    anlist.append(schedanim('fancy worm', 1, (1, 0, 0), st=0))
-    anlist.append(schedanim('big bloom', 12, (0, 1, 0), _internalDelay=random))
-    anlist.append(schedanim('dimmer', 3, (1, 0, 1)))
-    anlist.append(schedanim('dumb', 7, (0, 0, 1), st=0))
-    
-       
+    now = time.time() # GLOBAL
+    masteranimation = MasterAnimation(ledmaster, animationlist, runtime=2)
+    masteranimation.run(fps=None, threaded=False)
 
-    while any([not a.animComplete for a in anlist]):
+    # wait here before plotting otherwise data wont be ready
+    while not masteranimation.stopped():
         pass
-      
-    time.sleep(.01)  # time for _Timer thread to die
-    print threading.enumerate()
-    
-    h = 100*(len(anlist) + 2)
-    maxt = max([a.updateTimes[-1] for a in anlist])
-    
-    
+
+    print 'first anin updates number {}'.format(len(masteranimation._animTracks[0][0].updateTimes))
+    # plot timing data collected from all the animations
+    # horizontal axis is time in ms
+    # vertical are the various animation and dot is when update sent to leds by master
     import matplotlib.pyplot as plt
     plt.clf()
     col = 'brgcwk'
-    [plt.plot(a.updateTimes, [i] * len(a.updateTimes), col[i%6]+'o') for i, a in enumerate(anlist)]
+    [plt.plot(masteranimation.timedata[i], [i] * len(masteranimation.timedata[i]), col[i%6]+'o') for i in range(len(animationlist))]
     ax = plt.axis()
     delx = .01 * (ax[1] - ax[0])
     plt.axis([ax[0]-delx, ax[1]+delx, ax[2]-1, ax[3]+1])
+    plt.title("Master Animation Step Count {}".format(masteranimation._step))
