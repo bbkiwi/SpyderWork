@@ -2,7 +2,7 @@
 """
 For testing and development
 Animation class to handle timing and be able to start
-via a Timer
+by adding gostop list parameter to the Animation run method
 """
 
 
@@ -17,8 +17,13 @@ import threading
 from threading import Timer
 import math
 import types
+
 from bibliopixel import log
+from logging import DEBUG, INFO, WARNING, CRITICAL, ERROR
+log.setLogLevel(INFO)
+
 import re
+import bisect
 
 
 
@@ -30,7 +35,7 @@ class animThread(threading.Thread):
         self._args = args
 
     def run(self):
-        log.logger.info("Starting thread...bbbbb")
+        log.logger.info("Starting thread...")
         self._anim._run(**self._args)
         log.logger.info("Thread Complete")
 
@@ -98,9 +103,10 @@ class BaseAnimation(object):
         else:
             return True
 	    
-    def _run(self, amt, fps, sleep, max_steps, untilComplete, max_cycles, updateWithPush=True):
+    def _run(self, amt, fps, sleep, max_steps, untilComplete, 
+                 max_cycles, updateWithPush=True, gostop=None):
         self.preRun()
-        print fps, id(self)
+        # XXX print fps, id(self)
         # calculate fps based on sleep time (ms) 
         if sleep and fps is None:
             fps = 1000.0 / sleep
@@ -123,7 +129,6 @@ class BaseAnimation(object):
             self.step(amt)
             self.postStep(amt)
 
-            #print '{:.3f} {} step {} with amt = {}'.format(start, name, cur_step, amt)            #console.set_color()
             mid = time.time()
 
             if self._internalDelay:
@@ -138,7 +143,23 @@ class BaseAnimation(object):
                             
             if self._stopEvent.isSet():
                 break  
-                
+
+            # gostop is list of times to start, then stop, then start etc
+            # will wait if in time gap where should be stopped till out of it
+            #  or exceeds rightmost timelimit (and returns True in that case)
+            # gostop None does nothing and returns false
+            # TODO need to only do this if exists
+            # TODO this will give jerk in time if multicycling
+            # set flag to show animation is dormant during this wait
+            # so can be treated a blank with lowest heights during this time
+            if hasattr(self._led,'_inactiveEvent'):
+                self._led._inactiveEvent.set()
+                #print 'set'
+            if waitInGap(time.time() - now, gostop, waitfunc=self.waitfunc):
+                break #  if outside last time to complete the Animation
+            if hasattr(self._led,'_inactiveEvent'):
+                self._led._inactiveEvent.clear()     
+                #print 'clear'
 
             # update code starts here    
             startupdate = time.time()
@@ -153,7 +174,8 @@ class BaseAnimation(object):
                 self._led._updatenow.set()   # signals masterAnimation to act
                 pass
             
-            if self.animComplete and max_cycles > 0:
+	    # reset animComplete if cycling
+            if untilComplete and self.animComplete and max_cycles > 0:
                 if cycle_count < max_cycles - 1:
                     cycle_count += 1
                     self.animComplete = False
@@ -166,7 +188,9 @@ class BaseAnimation(object):
         if self._callback:
             self._callback(self)
 
-    def run(self, amt = 1, fps=None, sleep=None, max_steps = 0, untilComplete = False, max_cycles = 0, threaded = False, joinThread = False, callback=None, updateWithPush=True):
+    def run(self, amt = 1, fps=None, sleep=None, max_steps = 0, 
+            untilComplete = False, max_cycles = 0, threaded = False, 
+            joinThread = False, callback=None, updateWithPush=True, gostop=None):
         log.logger.info('{:.3f} Starting {}'.format(time.time() - self.now, id(self)))
         print '{:.3f} Starting {}'.format(time.time() - self.now, id(self))
         # TODO check orig if first run threaded and second time unthreaded may fail
@@ -183,7 +207,7 @@ class BaseAnimation(object):
             self.waitfunc = self._stopEvent.wait
             args = {}
             l = locals()
-            run_params = ["amt", "fps", "sleep", "max_steps", "untilComplete", "max_cycles", "updateWithPush"]
+            run_params = ["amt", "fps", "sleep", "max_steps", "untilComplete", "max_cycles", "updateWithPush", "gostop"]
             for p in run_params:
                 if p in l:
                     args[p] = l[p]
@@ -193,7 +217,7 @@ class BaseAnimation(object):
                 self._thread.join()
         else:
             self.waitfunc = time.sleep
-            self._run(amt, fps, sleep, max_steps, untilComplete, max_cycles, updateWithPush)
+            self._run(amt, fps, sleep, max_steps, untilComplete, max_cycles, updateWithPush, gostop)
 
 
 
@@ -212,7 +236,26 @@ def waitTillFrame(fps=1, waitfunc=time.sleep):
         breaktime = 0
     return breaktime
     #return time.time()
-    
+ 
+def waitInGap(t, gostop, waitfunc=time.sleep):
+    if gostop:
+        tmod = t % gostop[-1]
+        indtoright = bisect.bisect(gostop, tmod)
+        if indtoright % 2 == 0:
+            goal = gostop[indtoright]
+            twait = goal - tmod
+            #print 'WAIT for {} till {}'.format(twait, goal)
+            if t + twait > gostop[-1]:
+                return True
+            waitfunc(twait)
+        else:
+            #print 'GO'
+            pass
+        return time.time() - now > gostop[-1]
+    else:
+        return False
+          
+ 
 class OffAnim(BaseAnimation):
     def __init__(self, led, timeout=10):
         super(OffAnim, self).__init__(led)
@@ -371,19 +414,20 @@ class MasterAnimation(BaseMatrixAnim):
         self._ledcopies = []
         #XXX self._restoreupdates = []
         
-        # for all animations' leds add attributes: _updatenow, pixmap, pixheights
+        # make list of the unique leds associated with the animations
+        # for these leds add attributes: _updatenow, pixmap, pixheights
         ledcheck = set()
         self.ledsunique = True
-        for a, pixmap, pixheights, f, start, stop in self._animTracks:
+        for a, pixmap, pixheights, f, gostop in self._animTracks:
             # make list of the distinct ._led used by the animation
-            #  and attach threading.Event() atribute to them
+            #  and attach two threading.Event() atributes to them
             if id(a._led) in ledcheck:
                 self.ledsunique = False
             else:
                 ledcheck.add(id(a._led))
                 self._ledcopies.append(a._led)
                 a._led._updatenow = threading.Event()
-            
+                a._led._inactiveEvent = threading.Event()            
             #XXXself._restoreupdates.append(a._led.update)
             #XXXa._led.update = new.instancemethod(__update, a._led, None)
             # note if two animation tracks use the same _led, the last
@@ -443,17 +487,10 @@ class MasterAnimation(BaseMatrixAnim):
         super(MasterAnimation, self).preRun(amt)
         self.starttime = time.time()
         # starts all the animations at the same time
-        # TODO could add start and stop to a.run
-#        for a, pm, ph, fps in self._animTracks:
-#            a.run(fps=fps, max_steps=self._runtime * f, threaded = True, updateWithPush=False)
-        # use threading.Timer to schedual start and stop
-        for a, pm, ph, fps, start, stop  in self._animTracks:
-            # must have threaded True
-            t1 = Timer(start, a.run, kwargs={'fps':fps, 'threaded':True, 'updateWithPush':False, 'untilComplete':False})
-            t2 = Timer(stop, a.stopThread, ())
-            #waitTillFrame(fps)
-            t1.start()
-            t2.start()
+        # using gostop as parameter to a.run
+        for a, pm, ph, fps, gostop in self._animTracks:
+            a.run(fps=fps, max_steps=self._runtime * fps, threaded = True, 
+                    updateWithPush=False, gostop=gostop)
 
 
         #print "In preRUN THREADS: " + ",".join([re.sub('<class |,|bibliopixel.\w*.|>', '', str(s.__class__)) for s in threading.enumerate()])
@@ -464,19 +501,28 @@ class MasterAnimation(BaseMatrixAnim):
         while all(self._idlelist):
             self._idlelist = [not ledcopy._updatenow.isSet() for ledcopy in self._ledcopies]
             #print self._idlelist
-            if self._stopEvent.isSet() | all([a.stopped() for a, pm, ph, f, start, stop in self._animTracks]):
+            if self._stopEvent.isSet() | all([a.stopped() for a, pm, ph, f, gostop in self._animTracks]):
                 self.animComplete = True
                 #print all([a.stopped() for a, pm, pn, f in self._animTracks])
                 #print 'breaking out'
                 break
         self.activeanimind = [i for i, x in enumerate(self._idlelist) if x == False]
+        self.dormantlist = [ledcopy for ledcopy in self._ledcopies if ledcopy._inactiveEvent.isSet()]
+        self.dormantanimind = [i for i, x in enumerate(self._ledcopies) if x in self.dormantlist]
+        # TODO ASSERT activeanimind and dormantanimind should be disjoinT
         # keep list of pixels in the active animations pixmaps
         # TODO maybe - keep track of pixels that are actually changed
         #    this would require looking at each animations step so costly
         self.activepixels = set()
         for i in self.activeanimind:
             self.activepixels = self.activepixels.union(set(self._ledcopies[i].pixmap))
-#
+
+        for i in self.dormantanimind:
+            self._ledcopies[i]._inactiveEvent.clear()
+            self.activepixels = self.activepixels.union(set(self._ledcopies[i].pixmap))
+        #print "active {}".format(self.activeanimind)
+        #print "dormant {}".format(self.dormantanimind)
+        
     def postStep(self, amt=1):
         # clear the ones found in preStep
         #print len(self.activeanimind)
@@ -505,13 +551,20 @@ class MasterAnimation(BaseMatrixAnim):
             # i.e in union of pixmap of activeanimations
             active = ((pixind, pix) for pixind, pix in enumerate(ledcopy.pixmap) 
                                     if pix in self.activepixels)
-            for pixind, pix in active:
-                if self._led.pixheights[pix] == ledcopy.pixheights[pixind]:
-                    self._led._set_base(pix,
-                            xortuple(self._led._get_base(pix), ledcopy._get_push(pixind)))
-                elif self._led.pixheights[pix] < ledcopy.pixheights[pixind]:
-                    self._led._set_base(pix, ledcopy._get_push(pixind))
-                    self._led.pixheights[pix] = ledcopy.pixheights[pixind]
+
+            if ledcopy in self.dormantlist:
+                # treat dormant pixel as blank with lowest priority
+                for pixind, pix in active:
+                    if self._led.pixheights[pix] == -10000:
+                        self._led._set_base(pix, (0, 0, 0))
+            else:
+                for pixind, pix in active:
+                    if self._led.pixheights[pix] == ledcopy.pixheights[pixind]:
+                        self._led._set_base(pix,
+                                xortuple(self._led._get_base(pix), ledcopy._get_push(pixind)))
+                    elif self._led.pixheights[pix] < ledcopy.pixheights[pixind]:
+                        self._led._set_base(pix, ledcopy._get_push(pixind))
+                        self._led.pixheights[pix] = ledcopy.pixheights[pixind]
         self._step += 1
 
 
@@ -661,38 +714,35 @@ if __name__ == '__main__':
     wormwhite = (whitedimming, None, 1, -1, 5)
     
     # Worm pixmaps
-    wormbluepixmap = pathgen(3, 12, 0, 9)
+   # wormbluepixmap = pathgen(3, 12, 0, 9)
+    wormbluepixmap = pathgen(5, 11, 0, 9)
     wormredpixmap = pathgen(4, 11, 1, 8)
     wormgreenpixmap = pathgen(5, 10, 2, 7)
     wormcyanpixmap = pathgen(6, 9, 3, 6)
     wormwhitepixmap = pathgen(7, 8, 4, 5)
     
-    # List of triple (animation arguments, pixmaps, fps, start, stop)
-    wormdatalist = [(wormblue, wormbluepixmap, 10, 0, 10),
-                    (wormred, wormredpixmap, 5, 1, 10),
-                    (wormgreen, wormgreenpixmap, 19, 2, 8),
-                    (wormcyan, wormcyanpixmap, 21, 8, 12),
-                    (wormwhite, wormwhitepixmap, 16, 12, 14)]
+    # List of triple (animation arguments, pixmaps, fps, gostop)
+    wormdatalist = [(wormblue, wormbluepixmap, 10, [0, 10]),
+                    (wormred, wormredpixmap, 5, [1, 10]),
+                    (wormgreen, wormgreenpixmap, 19, [2, 8]),
+                    (wormcyan, wormcyanpixmap, 21, [8, 12]),
+                    (wormwhite, wormwhitepixmap, 16, [12, 14])]
 
-    wormdatalist = [(wormblue, wormbluepixmap, 1, 0, 10),
-                    (wormred, wormredpixmap, 5, 1, 10),
-                    (wormgreen, wormgreenpixmap, 4, 2, 8),
-                    (wormcyan, wormcyanpixmap, 10, 8, 12),
-                    (wormwhite, wormwhitepixmap, 6, 12, 14)]
+    wormdatalist = [(wormblue, wormbluepixmap, 1, [0, 10]),
+                    (wormred, wormredpixmap, 5, [1, 10]),
+                    (wormgreen, wormgreenpixmap, 4, [2, 8]),
+                    (wormcyan, wormcyanpixmap, 10, [8, 12]),
+                    (wormwhite, wormwhitepixmap, 6, [12, 14])]
 
-    wormdatalist = [(wormblue, wormbluepixmap, 4, 0, 6),
-                    (wormred, wormredpixmap, 4, 1, 10),
-                    (wormgreen, wormgreenpixmap, 4, 2, 8),
-                    (wormcyan, wormcyanpixmap, 4, 3, 12),
-                    (wormwhite, wormwhitepixmap, 4, 4, 14)]
+    wormdatalist = [(wormblue, wormbluepixmap, 14, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
+                    (wormred, wormredpixmap, 4, [1, 10]),
+                    (wormgreen, wormgreenpixmap, 24, [2, 8, 9]),
+                    (wormcyan, wormcyanpixmap, 4, [3, 12]),
+                    (wormwhite, wormwhitepixmap, 4, [4,5,11])]
                     
-    #wormdatalist = [(wormblue, wormbluepixmap, 120),
-    #                (wormred, wormredpixmap, 30),
-    #                (wormgreen, wormgreenpixmap, 40),
-    #                (wormcyan, wormcyanpixmap, 60),
-    #                (wormwhite, wormwhitepixmap, 20)]
-    
-    #wormdatalist = [(wormblue, wormbluepixmap, 10)]
+#    wormdatalist = [(wormblue, wormbluepixmap, 20, [1, 2, 3, 4, 5, 6, 7, 10]),
+#                    (wormred, wormredpixmap, 4, [0, 10])]
+
     
 
     # Each animation must have their own leds
@@ -704,26 +754,27 @@ if __name__ == '__main__':
     #    be correct (i.e. same size as pixmap and pixheights) aslo scaled pixels
     # can not be used   
     ledlist = [LEDStrip(DriverDummy(len(sarg)), threadedUpdate=False, 
-                masterBrightness=255) for aarg, sarg, fps, start, stop in wormdatalist]
+                masterBrightness=255) for aarg, sarg, fps, gostop in wormdatalist]
     # this is OK
 #    ledlist = [LEDStrip(DriverVisualizer(len(sarg), pixelSize=62, stayTop=True, maxWindowWidth=1024),
 #                          threadedUpdate=False, masterBrightness=255)
-#                          for aarg, sarg, fps, start, stop in wormdatalist]
+#                          for aarg, sarg, fps, gostop in wormdatalist]
 #    # TODO but using real driver with scaled pixels does not work
 #    ledlist = [LEDStrip(DriverVisualizer(len(sarg), pixelSize=62, stayTop=True, maxWindowWidth=1024),
 #                          pixelWidth=2, threadedUpdate=False, masterBrightness=255)
-#                          for aarg, sarg, fps, start, stop in wormdatalist]
+#                          for aarg, sarg, fps, gostop in wormdatalist]
     # this has correct number of scaled pixels, but MasterAnimation uses
     # _get_base which gives incorrect behavious
 #    ledlist = [LEDStrip(DriverVisualizer(len(sarg), pixelSize=62, stayTop=True, maxWindowWidth=1024),
 #                          pixelWidth=2, threadedUpdate=False, masterBrightness=255)
-#                          for aarg, sarg, fps, start, stop in wormdatalist]
+#                          for aarg, sarg, fps, gostop in wormdatalist]
     
     # Make the animation list
-    # Worm animations as list tuple (animation instances, pixmap, pixheights, fps, start, stop) added
-    animationlist = [(Worm(ledlist[i], *wd[0]), wd[1], -1, wd[2], wd[3], wd[4]) for i, wd in enumerate(wormdatalist)]
-    # add animation 2 (wormgreen) at end with another time
-    animationlist.append((animationlist[2][0],animationlist[2][1],animationlist[2][2], animationlist[2][3], 10, 15 ))
+    # Worm animations as list tuple (animation instances, pixmap, pixheights, fps, gostop) added
+    animationlist = [(Worm(ledlist[i], *wd[0]), wd[1], -1, wd[2], wd[3]) for i, wd in enumerate(wormdatalist)]
+    # add animation 2 (wormgreen) at end with another time but gostop allows this
+    #   directly now.
+    #animationlist.append((animationlist[2][0],animationlist[2][1],animationlist[2][2], animationlist[2][3], [10, 15] ))
 
 
     dim0 = dimLights(ledlist[0]) # uses same led as first animation, so will dim it
@@ -733,7 +784,7 @@ if __name__ == '__main__':
     
     # add to animationlist - None for pixmap and pixheight will keep the lists
     #   orginally assigned to the animations with these leds
-    animationlist.append((dim0, None, None, 100, 5, 10))
+    #animationlist.append((dim0, None, None, 100, [5, 10]))
 #    animationlist.append((dim1, None, None, 20))
 #    animationlist.append((shift2, None, None, 5))
 #    animationlist.append((dim2, None, None, 205))
@@ -742,15 +793,20 @@ if __name__ == '__main__':
     now = waitTillFrame() # global
     now = time.time() # global
     print now
-    
+    print threading.enumerate()
     now = time.time() # GLOBAL
-    masteranimation = MasterAnimation(ledmaster, animationlist, runtime=2)
+    # runtime is max total time each animations will accumulate
+    masteranimation = MasterAnimation(ledmaster, animationlist, runtime=20)
     masteranimation.run(fps=None, threaded=False)
 
+    #time.sleep(.01)
+    print threading.enumerate()
     # wait here before plotting otherwise data wont be ready
     while not masteranimation.stopped():
         pass
-
+    
+    print time.time() - now
+    print threading.enumerate()
     print 'first anin updates number {}'.format(len(masteranimation._animTracks[0][0].updateTimes))
     # plot timing data collected from all the animations
     # horizontal axis is time in ms
