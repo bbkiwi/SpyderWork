@@ -438,6 +438,7 @@ class MasterAnimation(BaseMatrixAnim):
         super(MasterAnimation, self).preRun(amt)
         self.starttime = time.time()
         # starts all the animations at the same time
+        # TODO could add start and stop to a.run
 #        for a, pm, ph, fps in self._animTracks:
 #            a.run(fps=fps, max_steps=self._runtime * f, threaded = True, updateWithPush=False)
         # use threading.Timer to schedual start and stop
@@ -592,6 +593,41 @@ def pathgen(nleft=0, nright=15, nbot=0, ntop=9, shift=0, turns=10, rounds=16):
     log.logger.info("pathgen({}, {}, {}, {}, {}) is {}".format(nleft, nright, nbot, ntop, shift, path))
     return path 
 
+class dimLights(BaseStripAnim):
+    def __init__(self, led, start=0, end=-1):
+        super(dimLights, self).__init__(led, start, end)
+        self._dir = -1
+        self._brightness = led.masterBrightness
+
+    def preRun(self,amt=1):
+        #self._led.fill(self.color)
+        self._count = 0
+
+    def step(self, amt=1):
+        self._brightness +=  self._dir * amt
+        if self._brightness < 0:
+            self._brightness = 0
+            self._dir = 1
+        elif self._brightness > 255:
+             self._brightness = 255
+             self._dir = -1     
+        # forces immediate change      
+        self._led.changeBrightness(self._brightness)
+        # will only show when dimmed animation pushes frame
+        #  so want dimmed animation fps faster than dimming fps
+        #self._led.setMasterBrightness(self._brightness)
+        self._step += amt
+        self._count += 1
+
+class shiftPixmap(BaseStripAnim):
+    def __init__(self, led, ledmaster, start=0, end=-1):
+        super(shiftPixmap, self).__init__(led, start, end)
+        self.ledmaster = ledmaster
+        
+    def step(self, amt=1):
+        self.ledmaster.all_off()
+        # any routine that moves pixmap
+        self._led.pixmap  = [(p + amt) % self.ledmaster.numLEDs for p in self._led.pixmap]
 
 
 if __name__ == '__main__': 
@@ -639,7 +675,7 @@ if __name__ == '__main__':
                     (wormcyan, wormcyanpixmap, 10, 8, 12),
                     (wormwhite, wormwhitepixmap, 6, 12, 14)]
 
-    wormdatalist = [(wormblue, wormbluepixmap, 4, 0, 10),
+    wormdatalist = [(wormblue, wormbluepixmap, 4, 0, 6),
                     (wormred, wormredpixmap, 4, 1, 10),
                     (wormgreen, wormgreenpixmap, 4, 2, 8),
                     (wormcyan, wormcyanpixmap, 4, 3, 12),
@@ -653,20 +689,49 @@ if __name__ == '__main__':
     
     #wormdatalist = [(wormblue, wormbluepixmap, 10)]
     
+
     # Each animation must have their own leds
-    # ledlist is list of unique leds
+    # ledlist is list of *unique leds (* under some circumstances animations sharing
+    #    leds will work but they will share the same buffers and must have the
+    #    same pixmap and pixheights)
+    # Note any driver can be used as it is ignored so only masterBrightness and
+    # masterBrightnessLimit have an effect. The number of pixels of the LED must
+    #    be correct (i.e. same size as pixmap and pixheights) aslo scaled pixels
+    # can not be used   
     ledlist = [LEDStrip(DriverDummy(len(sarg)), threadedUpdate=False, 
-                        masterBrightness=255) for aarg, sarg, fps, start, stop in wormdatalist]
-    
-    #ledlist = [LEDStrip(DriverVisualizer(len(sarg), pixelSize=62, stayTop=True, maxWindowWidth=1024),
-    #                      threadedUpdate=False, masterBrightness=255)
-    #                      for aarg, sarg, fps in wormdatalist]
+                masterBrightness=255) for aarg, sarg, fps, start, stop in wormdatalist]
+    # this is OK
+#    ledlist = [LEDStrip(DriverVisualizer(len(sarg), pixelSize=62, stayTop=True, maxWindowWidth=1024),
+#                          threadedUpdate=False, masterBrightness=255)
+#                          for aarg, sarg, fps, start, stop in wormdatalist]
+#    # TODO but using real driver with scaled pixels does not work
+#    ledlist = [LEDStrip(DriverVisualizer(len(sarg), pixelSize=62, stayTop=True, maxWindowWidth=1024),
+#                          pixelWidth=2, threadedUpdate=False, masterBrightness=255)
+#                          for aarg, sarg, fps, start, stop in wormdatalist]
+    # this has correct number of scaled pixels, but MasterAnimation uses
+    # _get_base which gives incorrect behavious
+#    ledlist = [LEDStrip(DriverVisualizer(len(sarg), pixelSize=62, stayTop=True, maxWindowWidth=1024),
+#                          pixelWidth=2, threadedUpdate=False, masterBrightness=255)
+#                          for aarg, sarg, fps, start, stop in wormdatalist]
     
     # Make the animation list
     # Worm animations as list tuple (animation instances, pixmap, pixheights, fps, start, stop) added
     animationlist = [(Worm(ledlist[i], *wd[0]), wd[1], -1, wd[2], wd[3], wd[4]) for i, wd in enumerate(wormdatalist)]
     # add animation 2 (wormgreen) at end with another time
     animationlist.append((animationlist[2][0],animationlist[2][1],animationlist[2][2], animationlist[2][3], 10, 15 ))
+
+
+    dim0 = dimLights(ledlist[0]) # uses same led as first animation, so will dim it
+#    dim1 = dimLights(ledlist[1]) # uses same led as second animation, so will dim it
+#    shift2 = shiftPixmap(ledlist[2], ledmaster) # uses same led as 2, so will move it
+#    dim2 = dimLights(ledlist[2])  
+    
+    # add to animationlist - None for pixmap and pixheight will keep the lists
+    #   orginally assigned to the animations with these leds
+    animationlist.append((dim0, None, None, 100, 5, 10))
+#    animationlist.append((dim1, None, None, 20))
+#    animationlist.append((shift2, None, None, 5))
+#    animationlist.append((dim2, None, None, 205))
 
     # wait till integral number of seconds
     now = waitTillFrame() # global
